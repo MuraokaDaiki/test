@@ -8,9 +8,9 @@
 
 
 ```jsx
-VPN_IPSEC_PSK=your_ipsec_pre_shared_key #1234
-VPN_USER=your_vpn_username #muraoka
-VPN_PASSWORD=your_vpn_password #okamura1234
+VPN_IPSEC_PSK=your_ipsec_pre_shared_key
+VPN_USER=your_vpn_username
+VPN_PASSWORD=your_vpn_password
 ```
 
 This will create a user account for VPN login, which can be used by your multiple devices[*](https://github.com/hwdsl2/docker-ipsec-vpn-server#important-notes). The IPsec PSK (pre-shared key) is specified by the `VPN_IPSEC_PSK` environment variable. The VPN username is defined in `VPN_USER`, and VPN password is specified by `VPN_PASSWORD`.
