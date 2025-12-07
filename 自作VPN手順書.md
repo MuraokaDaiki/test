@@ -1,0 +1,138 @@
+# 自作VPN手順書
+
+## Dockerでipsec-vpn-serverイメージを立ち上げる
+
+**Note:** All the variables to this image are optional, which means you don't have to type in any variable, and you can have an IPsec VPN server out of the box! To do that, create an empty `env` file using `touch vpn.env`, and skip to the next section.
+
+**注意:** このイメージのすべての変数はオプションです。つまり、変数を一切入力する必要がなく、そのままIPsec VPNサーバーを立ち上げることができます。そのためには、`touch vpn.env`で空の`env`ファイルを作成し、次のセクションに進んでください。
+
+
+```jsx
+VPN_IPSEC_PSK=your_ipsec_pre_shared_key #1234
+VPN_USER=your_vpn_username #muraoka
+VPN_PASSWORD=your_vpn_password #okamura1234
+```
+
+This will create a user account for VPN login, which can be used by your multiple devices[*](https://github.com/hwdsl2/docker-ipsec-vpn-server#important-notes). The IPsec PSK (pre-shared key) is specified by the `VPN_IPSEC_PSK` environment variable. The VPN username is defined in `VPN_USER`, and VPN password is specified by `VPN_PASSWORD`.
+
+Additional VPN users are supported, and can be optionally declared in your `env` file like this. Usernames and passwords must be separated by spaces, and usernames cannot contain duplicates. All VPN users will share the same IPsec PSK.
+
+これにより、複数のデバイスで使用できるVPNログイン用のユーザーアカウントが作成されます。IPsec PSK（事前共有鍵）は`VPN_IPSEC_PSK`環境変数で指定されます。VPNユーザー名は`VPN_USER`で定義され、VPNパスワードは`VPN_PASSWORD`で指定されます。
+
+追加のVPNユーザーもサポートされており、`env`ファイルで任意に宣言できます。ユーザー名とパスワードはスペースで区切る必要があり、ユーザー名に重複があってはいけません。すべてのVPNユーザーは同じIPsec PSKを共有します。
+
+```jsx
+VPN_ADDL_USERS=additional_username_1 additional_username_2
+VPN_ADDL_PASSWORDS=additional_password_1 additional_password_2
+```
+
+**Note:** In your `env` file, DO NOT put `""` or `''` around values, or add space around `=`. DO NOT use these special characters within values: `\ " '`. A secure IPsec PSK should consist of at least 20 random characters.
+
+**Note:** If you modify the `env` file after the Docker container is already created, you must remove and re-create the container for the changes to take effect. Refer to [Update Docker image](https://github.com/hwdsl2/docker-ipsec-vpn-server#update-docker-image).
+
+**注意:** `env`ファイルでは、値を`""`や`''`で囲んだり、`=`の前後にスペースを入れたりしないでください。値の中に次の特殊文字を使用しないでください:`\ " '`。安全なIPsec PSKは、少なくとも20文字のランダムな文字で構成される必要があります。
+
+**注意:** Dockerコンテナが既に作成された後に`env`ファイルを変更した場合、変更を有効にするにはコンテナを削除して再作成する必要があります。[Dockerイメージの更新](https://github.com/hwdsl2/docker-ipsec-vpn-server#update-docker-image)を参照してください。
+
+## Dockerコンテナ起動
+
+```jsx
+docker run \
+    --name ipsec-vpn-server \
+    --env-file ./vpn.env \
+    --restart=always \
+    -v ikev2-vpn-data:/etc/ipsec.d \
+    -v /lib/modules:/lib/modules:ro \
+    -p 500:500/udp \
+    -p 4500:4500/udp \
+    -d --privileged \
+    hwdsl2/ipsec-vpn-server
+```
+
+
+## Docker操作
+
+```jsx
+- docker images
+    - ホストにpullされたイメージ表示
+- docker ps
+    - 現在動いてるイメージ表示
+- docker run
+    
+    　—name イメージ名　
+    
+    　-p ポートフォアディング　
+    
+    　-e 環境変数　
+    
+    　-d バージョン
+    
+    - runするとimageを自動でpull
+- docker start イメージname
+    - すでにあるイメージを起動
+- docker stop イメージname
+    - 停止
+- docker rm イメージname
+    - 消す、イメージは残る
+- docker compose up
+    - -d 永続的にコンテナを立てる。
+- docker exec -it ipsec-vpn-server bash
+    - ipsec-vpn-serverイメージに入る
+    - -it　コンテナ内コマンド操作を今いるとこからできる。
+
+ 
+
+## サイトのまま
+
+```jsx
+docker run \
+    --name ipsec-vpn-server \
+    --restart=always \
+    -v ikev2-vpn-data:/etc/ipsec.d \
+    -v /lib/modules:/lib/modules:ro \
+    -p 500:500/udp \
+    -p 4500:4500/udp \
+    -d --privileged \
+    hwdsl2/ipsec-vpn-server
+```
+
+あなたのコマンドの問題点まとめ
+
+- v ikev2-vpn-data:/etc/ipsec.d → 不要（削除してOK）
+- -env HOST_ADDR=... が抜けてる → 初回ログに自分のIPが出てこないので少し不便（必須ではないが入れると楽）
+
+## ベストプラクティス
+
+```jsx
+docker run -d \
+    --name ipsec-vpn-server \
+    --restart=unless-stopped \
+    -p 500:500/udp \
+    -p 4500:4500/udp \
+    -v /lib/modules:/lib/modules:ro \
+    --privileged \
+    hwdsl2/ipsec-vpn-server
+
+```
+
+
+## docker compose upで以下compose.yamlファイルを実行
+
+```jsx
+services:
+  vpnserver:
+    image: hwdsl2/ipsec-vpn-server
+    ports:
+      - 500:500/udp
+      - 4500:4500/udp
+    volumes:
+      - ./ikev2-vpn-data:/etc/ipsec.d
+      - /lib/modules:/lib/modules:ro
+    privileged: true
+    environment:
+      - VPN_IKEV2_ONLY=yes
+      - VPN_XAUTH_NET=192.168.43.0/24
+      - VPN_XAUTH_POOL=192.168.43.10-192.168.43.250
+    restart: unless-stopped
+
+```
