@@ -1,4 +1,4 @@
-'''mermaid
+```mermaid
 erDiagram
     M_FACILITY ||--o{ T_PROGRESS_HISTORY : "設備IDで結合"
     M_FACILITY ||--o{ T_DEFECTIVE : "設備IDで結合"
@@ -57,4 +57,4 @@ erDiagram
         datetime start
         datetime finish
     }
-'''
+```
